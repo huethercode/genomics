@@ -1,0 +1,93 @@
+type	gene
+Sun Sensitivit	IRF4
+Sun Sensitivit	CPNE7
+Sun Sensitivit	LOC105374875
+Sun Sensitivit	NTM
+Sun Sensitivit	TYR
+Sun Sensitivit	HERC2
+Sun Sensitivit	MC1R
+Sun Sensitivit	MC1R
+Sun Sensitivit	RPS2P1
+Sun Sensitivit	ASIP
+Skin Aging	IRF4
+Skin Aging	SPATA33
+Skin Aging	RALY
+Skin Aging	BNC2
+Facial Aging	STXBP5L
+Stetch Marks	ELN
+Stetch Marks	SRPX
+Stetch Marks	HMCN1
+Stetch Marks	LOC105373353
+Skin Glycation	AGER
+Skin Glycation	GLO1
+Fat Loss Response To Cardio	ADRB2
+Fat Loss Response To Cardio	LPL
+Body Composition Response To Strength Training	NRXN3
+Body Composition Response To Strength Training	GNPDA2
+Body Composition Response To Strength Training	LRRN6C
+Body Composition Response To Strength Training	PRKD1
+Body Composition Response To Strength Training	GPRC5B
+Body Composition Response To Strength Training	SLC39A8
+Body Composition Response To Strength Training	FTO
+Body Composition Response To Strength Training	FLJ35779
+Body Composition Response To Strength Training	MAP2K5
+Body Composition Response To Strength Training	QPCTL-GIPR
+Body Composition Response To Strength Training	NEGR1
+Body Composition Response To Strength Training	LRP1B
+Body Composition Response To Strength Training	MTCH2
+Body Composition Response To Strength Training	MTIF3
+Body Composition Response To Strength Training	RPL27A
+Body Composition Response To Strength Training	SEC16B
+Body Composition Response To Strength Training	FAIM2
+Body Composition Response To Strength Training	FANCL
+Body Composition Response To Strength Training	ETV5
+Body Composition Response To Strength Training	TFAP2B
+Intrinsic Motivation To Exercise	BDNF
+Addictive Behavior And Stimulus Control	DRD2
+Impulse Control And Taste Preference	FTO
+Sleep Duration	ABCC9
+Sleep Duration	LOC101927400
+Sleep Duration	DRD2
+Sugar Intake	SLC2A2
+Sugar Intake	GLUT2
+Mental Acuity	APOE
+Mental Acuity	BDNF
+Age Related Hearing Loss	GRM7
+Longevity	FOXO3
+Longevity	APOC1
+Longevity	(APOE-CI-CII)
+Fitness Response To Cardio	AMPD1
+Fitness Response To Cardio	APOE
+Systemic Inflammation	CRP
+Systemic Inflammation	APOC1
+Systemic Inflammation	(APOE-CI-CII)
+Systemic Inflammation	HNF1A
+Polyunsaturated Fatty Acid Levels	FADS1
+Polyunsaturated Fatty Acid Levels	FADS2
+Cholesterol Response To Dietary Fat	LIPC
+Insulin Response To Dietary Fat	FTO
+Trig Response To Cardio	CYYR1
+Trig Response To Cardio	GLT8D2
+Trig Response To Cardio	RBFOX1
+Trig Response To Cardio	ZNF385D
+Lactose Intolerance	MCM6
+Calcium Levels	CASR
+Calcium Levels	DGKD
+Calcium Levels	GCKR
+Calcium Levels	LINC00709
+Calcium Levels	CARS
+Calcium Levels	LOC105370176
+Calcium Levels	CYP24A1
+Copper Levels	SMIM1
+Copper Levels	SELENBP1
+Magnesium Levels	MUC1
+Magnesium Levels	SHROOM3
+Magnesium Levels	TRPM6
+Magnesium Levels	DCDC5
+Magnesium Levels	ATP2B1
+Magnesium Levels	MECOM
+Dietary Choline Levels	PEMT
+Selenium Levels	DMGDH
+Zinc Levels	CA1
+Zinc Levels	PPCDC
+Zinc Levels	LINC01420
