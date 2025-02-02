@@ -199,6 +199,7 @@ knitr::include_graphics("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002
 
 # 4. Hereditary Genetics
 
+
 # 5. Wellness
 
 # 6. PRS categories
