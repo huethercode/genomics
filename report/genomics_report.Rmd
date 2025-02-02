@@ -1,6 +1,13 @@
 ---
 title: "Genomics_report_v1"
-output: github_document
+author: "Huethercode"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: journal
 ---
 
 ```{r setup_load_pkg, include=FALSE}
@@ -19,7 +26,11 @@ library(dplyr)
 library(karyoploteR)
 library(GenomicRanges)
 ```
+# 1. Introduction and Data Import
 
+This report provides a quality control (QC) analysis of the input Variant Call Format (VCF) file, summarizing key statistics and visualizations.
+
+## 2. Data Import, Preprocessing, QC
 ```{r}
 
 # Load a VCF file (replace 'example.vcf' with your file path)
@@ -48,6 +59,8 @@ df <- data.frame(
 df <- df %>% filter(!is.na(DP) & !is.na(GQ))
 
 ```
+
+## 3. Variant Quality Control Metrics
 
 ```{r qc_summary, echo=FALSE}
 # Calculate Ts/Tv ratio manually
@@ -111,8 +124,9 @@ Mean Depth (DP)	mean(dp, na.rm = TRUE)	> 30 (exome), > 10 (genome)	PASS/FAIL
 Genotype Quality (GQ)	mean(gq, na.rm = TRUE)	> 20	PASS/FAIL
 SNP Count	snp_count	N/A (context-dependent)	Info
 Indel Count	indel_count	N/A (context-dependent)	Info
-% Missing Data	mean(is.na(gt)) * 100	< 5%
 
+
+## 4. Depth and Variant Density Across the Genome
 ```{r vcf-qc-plots_density}
 
 # Plot Depth Across the Genome on a Karyoplot as a Line Plot
@@ -143,8 +157,8 @@ kpLines(kp, chr = depth_df$Chr, x = depth_df$Position, y = depth_df$DP, ymin=0.2
 #kpPlotDensity(kp, data = GRanges(seqnames = variant_density$Chr, ranges = IRanges(start = variant_density$Position, width = 1)), col = "red", border = "red")
 
 ```
-
-```{r vcf-qc-plots_af}
+## 5. Allele Frequency Distribution
+```{r vcf-qc-plots_af, message=FALSE, warning=FALSE}
 # Extract allele frequency (AF) values from the INFO field
 allele_freqs <- as.numeric(sapply(strsplit(vcf@fix[, "INFO"], ";"), function(x) {
   af_entry <- grep("AF=", x, value = TRUE)
@@ -164,4 +178,14 @@ ggplot(data.frame(AF = allele_freqs), aes(x = AF)) +
   theme_minimal()
 ```
 
+
+# 2. Ancestry
+
+# 3. PGx
+
+# 4. Hereditary Genetics
+
+# 5. Wellness
+
+# 6. PRS categories
 
