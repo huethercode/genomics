@@ -8,18 +8,20 @@ output:
     toc_float: true
     number_sections: true
     theme: journal
+  word_document:
+    toc: true
+  pdf_document:
+    toc: true
 ---
 
-```{r setup_load_pkg, include=FALSE}
-knitr::opts_chunk$set(include = FALSE)
+```{r setup_load_pkg, include=FALSE,cache=TRUE, dependson="packages" }
 #if (!require("BiocManager", quietly = TRUE))
 #    install.packages("BiocManager")
 #BiocManager::install("karyoploteR")
 
-#.libPaths("/home/linuxbrew/.linuxbrew/Cellar/gcc/14.2.0_1/lib/gcc/current/")
-#Sys.setenv(PATH="/home/linuxbrew/.linuxbrew/Cellar/gcc/14.2.0_1/lib/gcc/current/")
-#Sys.setenv("R_LIBS_USER"="/home/linuxbrew/.linuxbrew/Cellar/gcc/14.2.0_1/lib/gcc/current/")
-#Sys.setenv("LD_LIBRARY_PATH"="/home/linuxbrew/.linuxbrew/Cellar/gcc/14.2.0_1/lib/gcc/current/")
+#sudo cp /home/linuxbrew/.linuxbrew/Cellar/gcc/14.2.0_1/lib/gcc/current/libstdc++.so.6 /usr/lib/x86_64-linux-gnu/libstdc++.so.6
+#strings /usr/lib/x86_64-linux-gnu/libstdc++.so.6 | grep CXXABI
+
 library(vcfR)
 library(ggplot2)
 library(dplyr)
@@ -31,10 +33,9 @@ library(GenomicRanges)
 This report provides a quality control (QC) analysis of the input Variant Call Format (VCF) file, summarizing key statistics and visualizations.
 
 ## 2. Data Import, Preprocessing, QC
-```{r}
+```{r include=FALSE}
 
-# Load a VCF file (replace 'example.vcf' with your file path)
-vcf_file <- "~/Documents/genomics/exome_bk/bobby_exome_genotyped.ann.vcf"
+vcf_file <- "~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/bobby_exome_genotyped.ann.vcf"
 vcf <- read.vcfR(vcf_file, verbose = FALSE)
 
 # Filter out low-quality variants
@@ -112,7 +113,7 @@ qc_summary <- data.frame(
   Threshold = c("> 2.0", "> 30", "> 20", "N/A", "N/A", "N/A"),
   Status = c(ts_tv_status, depth_status, gq_status, "Info", "Info", "Info")
 )
-print(qc_summary)
+qc_summary
 
 ```
 
@@ -127,7 +128,7 @@ Indel Count	indel_count	N/A (context-dependent)	Info
 
 
 ## 4. Depth and Variant Density Across the Genome
-```{r vcf-qc-plots_density}
+```{r vcf-qc-plots_density, echo=FALSE}
 
 # Plot Depth Across the Genome on a Karyoplot as a Line Plot
 kp <- plotKaryotype(genome = "hg19")# Normalize depth values between 0 and 1
@@ -145,7 +146,7 @@ variant_density <- data.frame(Chr = vcf@fix[, "CHROM"], Position = as.numeric(vc
 # Plot Depth Across the Genome on a Karyoplot as a Line Plot
 kp <- plotKaryotype(genome = "hg19")
 
-kpDataBackground(kp, data.panel = 1, r0=0, r1=0.8)
+#kpDataBackground(kp, data.panel = 1, r0=0, r1=0.8)
   kpAxis(kp, ymin=0.2, ymax=1, r0=0.05, r1=0.75, col="gray50", cex=0.2)
 #  kpPoints(kp, chr = depth_df$Chr, x = depth_df$Position, y = depth_df$DP, ymin=0, ymax=1, r0=0.05, r1=0.75, col="black", pch=".", cex=2)
   
@@ -157,8 +158,10 @@ kpLines(kp, chr = depth_df$Chr, x = depth_df$Position, y = depth_df$DP, ymin=0.2
 #kpPlotDensity(kp, data = GRanges(seqnames = variant_density$Chr, ranges = IRanges(start = variant_density$Position, width = 1)), col = "red", border = "red")
 
 ```
+Observed locations accross the genome where variants are present.
+
 ## 5. Allele Frequency Distribution
-```{r vcf-qc-plots_af, message=FALSE, warning=FALSE}
+```{r vcf-qc-plots_af, echo=FALSE, message=FALSE, warning=FALSE}
 # Extract allele frequency (AF) values from the INFO field
 allele_freqs <- as.numeric(sapply(strsplit(vcf@fix[, "INFO"], ";"), function(x) {
   af_entry <- grep("AF=", x, value = TRUE)
@@ -172,14 +175,23 @@ allele_freqs <- as.numeric(sapply(strsplit(vcf@fix[, "INFO"], ";"), function(x) 
 allele_freqs <- allele_freqs[!is.na(allele_freqs)]
 
 # Plot allele frequency distribution
-ggplot(data.frame(AF = allele_freqs), aes(x = AF)) +
+p_af<-ggplot(data.frame(AF = allele_freqs), aes(x = AF)) +
   geom_histogram(binwidth = 0.05, fill = "blue", color = "black", alpha = 0.7) +
   labs(title = "Allele Frequency Distribution", x = "Allele Frequency", y = "Count") +
   theme_minimal()
+p_af
 ```
 
 
 # 2. Ancestry
+```{r, out.height = "460px", out.width='800px', include=TRUE, fig.align="center", fig.cap=c("Ancestry_by_snv_story"), echo=FALSE}
+knitr::include_graphics("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/f1988686-db0b-4818-aa0a-d8720c520a23.pdf")
+
+knitr::include_graphics("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/f1988686-db0b-4818-aa0a-d8720c520a23_1kGP_umap.html")
+
+knitr::include_graphics("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/f1988686-db0b-4818-aa0a-d8720c520a23_gnomAD_umap.html")
+
+```
 
 # 3. PGx
 
