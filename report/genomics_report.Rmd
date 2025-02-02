@@ -35,7 +35,9 @@ This report provides a quality control (QC) analysis of the input Variant Call F
 ## 2. Data Import, Preprocessing, QC
 ```{r include=FALSE}
 
-vcf_file <- "~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/bobby_exome_genotyped.ann.vcf"
+#vcf_file <- "~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/bobby_exome_genotyped.ann.vcf"
+vcf_file <- "~/Documents/genomics/data/bobby_exome_genotyped.ann.vcf"
+
 vcf <- read.vcfR(vcf_file, verbose = FALSE)
 
 # Filter out low-quality variants
