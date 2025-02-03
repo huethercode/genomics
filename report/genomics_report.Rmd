@@ -18,6 +18,8 @@ output:
 #if (!require("BiocManager", quietly = TRUE))
 #    install.packages("BiocManager")
 #BiocManager::install("karyoploteR")
+#BiocManager::install("org.Hs.eg.db")
+#BiocManager::install("ensemblVEP")
 
 #sudo cp /home/linuxbrew/.linuxbrew/Cellar/gcc/14.2.0_1/lib/gcc/current/libstdc++.so.6 /usr/lib/x86_64-linux-gnu/libstdc++.so.6
 #strings /usr/lib/x86_64-linux-gnu/libstdc++.so.6 | grep CXXABI
@@ -27,6 +29,14 @@ library(ggplot2)
 library(dplyr)
 library(karyoploteR)
 library(GenomicRanges)
+
+#hereditary genetics
+library(VariantAnnotation)
+library(AnnotationDbi)
+library(org.Hs.eg.db)
+library(GenomicRanges)
+library(ensemblVEP)
+
 ```
 # 1. Introduction and Data Import
 
@@ -220,7 +230,60 @@ knitr::include_graphics("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002
 
 # 3. PGx
 
+
 # 4. Hereditary Genetics
+```{r}
+
+
+# Define ACMG secondary findings list of genes
+acmg_genes <- c("BRCA1", "BRCA2", "TP53", "STK11", "MLH1", "MSH2", "MSH6", "PMS2", "APC", "MUTYH", "VHL", "MEN1", "RET", "PTEN", "RB1", "SDHD", "SDHAF2", "SDHC", "SDHB", "TSC1", "TSC2", "WT1", "NF2")
+
+# Function to filter VCF to ACMG genes and identify rare/clinvar/LoF variants
+filter_acmg_variants <- function(vcf_file) {
+  vcf <- readVcf(vcf_file, "hg19")
+  
+  # Filter for ACMG genes
+  acmg_variants <- vcf[seqnames(vcf) %in% acmg_genes]
+  
+  # Annotate variants using Ensembl VEP
+  vep_results <- ensemblVEP::vep(acmg_variants)
+  
+  # Filter for rare variants (AF < 0.01)
+  rare_variants <- vep_results[vep_results$AF < 0.01, ]
+  
+  # Filter for ClinVar pathogenic variants
+  clinvar_variants <- rare_variants[grepl("pathogenic", rare_variants$CLIN_SIG, ignore.case = TRUE), ]
+  
+  # Filter for loss of function variants
+  lof_variants <- rare_variants[grepl("stop_gained|frameshift_variant|splice_acceptor_variant|splice_donor_variant", rare_variants$Consequence, ignore.case = TRUE), ]
+  
+  # Combine all filtered variants
+  filtered_variants <- rbind(clinvar_variants, lof_variants)
+  
+  # Extract relevant information
+  variant_table <- data.frame(
+    Chromosome = seqnames(filtered_variants),
+    Position = start(filtered_variants),
+    Reference = ref(filtered_variants),
+    Alternate = alt(filtered_variants),
+    Gene = filtered_variants$SYMBOL,
+    HGVS = filtered_variants$HGVSc,
+    Classification = filtered_variants$CLIN_SIG,
+    Disease = filtered_variants$Phenotype,
+    Literature = paste0("https://www.ncbi.nlm.nih.gov/pubmed/?term=", filtered_variants$SYMBOL)
+  )
+  
+  return(variant_table)
+}
+
+# Define the VCF file path
+vcf_file <- "~/Documents/genomics/data/f1988686-db0b-4818-aa0a-d8720c520a23_genotyped.ann.vcf"
+
+# Filter the VCF file and output the table
+acmg_variant_table <- filter_acmg_variants(vcf_file)
+acmg_variant_table
+
+```
 
 
 # 5. Wellness
