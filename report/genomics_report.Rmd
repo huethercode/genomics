@@ -90,11 +90,6 @@ indel_count <- sum(nchar(variants$REF) > 1 | nchar(variants$ALT) > 1, na.rm = TR
 #cat("Number of SNPs:", snp_count, "\n")
 #cat("Number of Indels:", indel_count, "\n")
 
-# Count number of genes with a variant present
-gene_info <- vcf@fix[, "INFO"]
-genes <- unique(unlist(strsplit(gene_info[grep("GENE=", gene_info)], split = "GENE="))[-1])
-gene_count <- length(genes)
-
 cat("Number of Genes with Variants:", gene_count, "\n")
 
 # Calculate QC metrics
@@ -110,10 +105,10 @@ gq_status <- ifelse(mean_gq > 20, "PASS", "FAIL")
 
 # Create QC summary table
 qc_summary <- data.frame(
-  Metric = c("Ts/Tv Ratio", "Mean Depth (DP)", "Mean Genotype Quality (GQ)", "Number of SNPs", "Number of Indels", "Number of Genes with Variants"),
-  Value = c(ts_tv_ratio, mean_depth, mean_gq, snp_count, indel_count, gene_count),
-  Threshold = c("> 2.0", "> 30", "> 20", "N/A", "N/A", "N/A"),
-  Status = c(ts_tv_status, depth_status, gq_status, "Info", "Info", "Info")
+  Metric = c("Ts/Tv Ratio", "Mean Depth (DP)", "Mean Genotype Quality (GQ)", "Number of SNPs", "Number of Indels"),
+  Value = c(ts_tv_ratio, mean_depth, mean_gq, snp_count, indel_count),
+  Threshold = c("> 2.0", "> 30", "> 20", "N/A", "N/A"),
+  Status = c(ts_tv_status, depth_status, gq_status, "Info", "Info")
 )
 qc_summary
 
