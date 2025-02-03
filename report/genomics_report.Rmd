@@ -36,7 +36,7 @@ This report provides a quality control (QC) analysis of the input Variant Call F
 ```{r include=FALSE}
 
 #vcf_file <- "~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/bobby_exome_genotyped.ann.vcf"
-vcf_file <- "~/Documents/genomics/data/bobby_exome_genotyped.ann.vcf"
+vcf_file <- "~/Documents/genomics/data/f1988686-db0b-4818-aa0a-d8720c520a23_genotyped.ann.vcf"
 
 vcf <- read.vcfR(vcf_file, verbose = FALSE)
 
@@ -128,6 +128,34 @@ Genotype Quality (GQ)	mean(gq, na.rm = TRUE)	> 20	PASS/FAIL
 SNP Count	snp_count	N/A (context-dependent)	Info
 Indel Count	indel_count	N/A (context-dependent)	Info
 
+## 4. Indel size distribution
+
+```{r indel_dist, include=FALSE}
+
+
+# Create a data frame for indels
+indels <- variants[nchar(variants$REF) > 1 | nchar(variants$ALT) > 1, ]
+
+# Classify indels as insertions or deletions
+indels$Type <- ifelse(nchar(indels$REF) > nchar(indels$ALT), "Deletion", "Insertion")
+
+# Calculate indel sizes
+indels$Size <- abs(nchar(indels$REF) - nchar(indels$ALT))
+
+# Create bins for indel sizes
+bin_size <- 5
+indels$SizeBin <- cut(indels$Size, breaks = seq(0, max(indels$Size, na.rm = TRUE) + bin_size, by = bin_size), include.lowest = TRUE)
+
+
+# Plot indel size distribution
+ggplot(indels, aes(x = SizeBin, fill = Type)) +
+  geom_bar(data = subset(indels, Type == "Deletion"), aes(y = after_stat(count)), position = position_nudge(x = -0.2), width = 0.4) +
+  geom_bar(data = subset(indels, Type == "Insertion"), aes(y = after_stat(count)), position = position_nudge(x = 0.2), width = 0.4) +
+  scale_fill_manual(values = c("Deletion" = "red", "Insertion" = "blue")) +
+  labs(title = "Indel Size Distribution", x = "Indel Size (bp)", y = "Count") +
+  theme_minimal()
+```
+
 
 ## 4. Depth and Variant Density Across the Genome
 ```{r vcf-qc-plots_density, echo=FALSE}
@@ -186,7 +214,7 @@ p_af
 
 
 # 2. Ancestry
-```{r, out.height = "460px", out.width='800px', include=TRUE, fig.align="center", fig.cap=c("Ancestry_by_snv_story"), echo=FALSE}
+```{r ancestry_plots, eval=FALSE, fig.align="center", fig.cap=c("Ancestry_by_snv_story"), include=FALSE, out.height="460px", out.width='800px'}
 knitr::include_graphics("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/f1988686-db0b-4818-aa0a-d8720c520a23.pdf")
 
 knitr::include_graphics("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/f1988686-db0b-4818-aa0a-d8720c520a23_1kGP_umap.html")
