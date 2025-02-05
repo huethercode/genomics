@@ -29,13 +29,12 @@ library(ggplot2)
 library(dplyr)
 library(karyoploteR)
 library(GenomicRanges)
+library(DBI)
+library(readr)
 
 #hereditary genetics
 library(VariantAnnotation)
-library(AnnotationDbi)
-library(org.Hs.eg.db)
-library(GenomicRanges)
-library(ensemblVEP)
+
 
 ```
 # 1. Introduction and Data Import
@@ -45,8 +44,14 @@ This report provides a quality control (QC) analysis of the input Variant Call F
 ## 2. Data Import, Preprocessing, QC
 ```{r include=FALSE}
 
-#vcf_file <- "~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/bobby_exome_genotyped.ann.vcf"
-vcf_file <- "~/Documents/genomics/data/f1988686-db0b-4818-aa0a-d8720c520a23_genotyped.ann.vcf"
+vcf_file <- "~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/bobby_exome_genotyped.ann.vcf"
+#vcf_file <- "~/Documents/genomics/data/f1988686-db0b-4818-aa0a-d8720c520a23_genotyped.ann.vcf"
+
+
+X250204_195258_export_variant <- read_delim("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/250204-195258_export_variant.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE, skip = 6)
+
 
 vcf <- read.vcfR(vcf_file, verbose = FALSE)
 
@@ -137,6 +142,7 @@ Indel Count	indel_count	N/A (context-dependent)	Info
 
 ```{r indel_dist, include=FALSE}
 
+dbGetQuery(mydb, 'SELECT * FROM mtcars LIMIT 5')
 
 # Create a data frame for indels
 indels <- variants[nchar(variants$REF) > 1 | nchar(variants$ALT) > 1, ]
@@ -233,56 +239,16 @@ knitr::include_graphics("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002
 
 # 4. Hereditary Genetics
 ```{r}
-
-
 # Define ACMG secondary findings list of genes
-acmg_genes <- c("BRCA1", "BRCA2", "TP53", "STK11", "MLH1", "MSH2", "MSH6", "PMS2", "APC", "MUTYH", "VHL", "MEN1", "RET", "PTEN", "RB1", "SDHD", "SDHAF2", "SDHC", "SDHB", "TSC1", "TSC2", "WT1", "NF2")
+ACMG_SF_v3.2 <- read.table("~/Documents/genomics/refdata/gene_list/ACMG_SF_v3.2.txt", quote="\"", comment.char="")
 
-# Function to filter VCF to ACMG genes and identify rare/clinvar/LoF variants
-filter_acmg_variants <- function(vcf_file) {
-  vcf <- readVcf(vcf_file, "hg19")
-  
-  # Filter for ACMG genes
-  acmg_variants <- vcf[seqnames(vcf) %in% acmg_genes]
-  
-  # Annotate variants using Ensembl VEP
-  vep_results <- ensemblVEP::vep(acmg_variants)
-  
-  # Filter for rare variants (AF < 0.01)
-  rare_variants <- vep_results[vep_results$AF < 0.01, ]
-  
-  # Filter for ClinVar pathogenic variants
-  clinvar_variants <- rare_variants[grepl("pathogenic", rare_variants$CLIN_SIG, ignore.case = TRUE), ]
-  
-  # Filter for loss of function variants
-  lof_variants <- rare_variants[grepl("stop_gained|frameshift_variant|splice_acceptor_variant|splice_donor_variant", rare_variants$Consequence, ignore.case = TRUE), ]
-  
-  # Combine all filtered variants
-  filtered_variants <- rbind(clinvar_variants, lof_variants)
-  
-  # Extract relevant information
-  variant_table <- data.frame(
-    Chromosome = seqnames(filtered_variants),
-    Position = start(filtered_variants),
-    Reference = ref(filtered_variants),
-    Alternate = alt(filtered_variants),
-    Gene = filtered_variants$SYMBOL,
-    HGVS = filtered_variants$HGVSc,
-    Classification = filtered_variants$CLIN_SIG,
-    Disease = filtered_variants$Phenotype,
-    Literature = paste0("https://www.ncbi.nlm.nih.gov/pubmed/?term=", filtered_variants$SYMBOL)
-  )
-  
-  return(variant_table)
-}
+acmg_var<- X250204_195258_export_variant %>% 
+  filter(Gene %in% ACMG_SF_v3.2$V1)
 
-# Define the VCF file path
-vcf_file <- "~/Documents/genomics/data/f1988686-db0b-4818-aa0a-d8720c520a23_genotyped.ann.vcf"
-
-# Filter the VCF file and output the table
-acmg_variant_table <- filter_acmg_variants(vcf_file)
-acmg_variant_table
-
+#Revel Score High
+variant_high <- acmg_var %>%
+  filter(Score>=0.4| grepl('athog', Clinical_Significance)) %>%
+  select(Gene,cDNA_change,Protein_Change, AF,DP,Score,Chrom...1,Position,Ref_Base,Alt_Base)
 ```
 
 
