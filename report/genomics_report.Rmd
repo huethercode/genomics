@@ -12,9 +12,12 @@ output:
     toc: true
   pdf_document:
     toc: true
+    fig_caption: true
+    df_print: kable
 ---
 
-```{r setup_load_pkg, include=FALSE,cache=TRUE, dependson="packages" }
+```{r setup_load_pkg, dependson="packages" }
+knitr::opts_chunk$set(echo = FALSE)
 #if (!require("BiocManager", quietly = TRUE))
 #    install.packages("BiocManager")
 #BiocManager::install("karyoploteR")
@@ -31,6 +34,9 @@ library(karyoploteR)
 library(GenomicRanges)
 library(DBI)
 library(readr)
+library(tinytex)
+library(knitr)
+library(kableExtra)
 
 #hereditary genetics
 library(VariantAnnotation)
@@ -42,13 +48,13 @@ library(VariantAnnotation)
 This report provides a quality control (QC) analysis of the input Variant Call Format (VCF) file, summarizing key statistics and visualizations.
 
 ## 2. Data Import, Preprocessing, QC
-```{r include=FALSE}
-
+```{r data_import}
+knitr::opts_chunk$set(include = FALSE)
 vcf_file <- "~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/bobby_exome_genotyped.ann.vcf"
 #vcf_file <- "~/Documents/genomics/data/f1988686-db0b-4818-aa0a-d8720c520a23_genotyped.ann.vcf"
 
-
-X250204_195258_export_variant <- read_delim("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/250204-195258_export_variant.tsv", 
+#open-cravat annotation: Manual Step: run annotations: Clinvar (2nd),  REVEL, alpha missesense, bayesdel,  pharmgkb: export coding
+X250204_195258_export_variant <- read_delim("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/oc.tsv", 
     delim = "\t", escape_double = FALSE, 
     trim_ws = TRUE, skip = 6)
 
@@ -81,6 +87,7 @@ df <- df %>% filter(!is.na(DP) & !is.na(GQ))
 ## 3. Variant Quality Control Metrics
 
 ```{r qc_summary, echo=FALSE}
+knitr::opts_chunk$set(include = FALSE)
 # Calculate Ts/Tv ratio manually
 transitions <- c("A>G", "G>A", "C>T", "T>C")
 transversions <- c("A>C", "A>T", "G>C", "G>T", "C>A", "C>G", "T>A", "T>G")
@@ -105,7 +112,7 @@ indel_count <- sum(nchar(variants$REF) > 1 | nchar(variants$ALT) > 1, na.rm = TR
 #cat("Number of SNPs:", snp_count, "\n")
 #cat("Number of Indels:", indel_count, "\n")
 
-cat("Number of Genes with Variants:", gene_count, "\n")
+#cat("Number of Genes with Variants:", gene_count, "\n")
 
 # Calculate QC metrics
 mean_depth <- mean(dp, na.rm = TRUE)
@@ -125,10 +132,14 @@ qc_summary <- data.frame(
   Threshold = c("> 2.0", "> 30", "> 20", "N/A", "N/A"),
   Status = c(ts_tv_status, depth_status, gq_status, "Info", "Info")
 )
-qc_summary
+
 
 ```
 
+```{r show_qc_summary, fig.width = 5, fig.height = 5}
+knitr::opts_chunk$set(include = TRUE)
+knitr::kable(qc_summary, caption = "QC summary table")
+```
 
 
 Metric	Value (Observed)	Threshold	Status
@@ -141,8 +152,7 @@ Indel Count	indel_count	N/A (context-dependent)	Info
 ## 4. Indel size distribution
 
 ```{r indel_dist, include=FALSE}
-
-dbGetQuery(mydb, 'SELECT * FROM mtcars LIMIT 5')
+knitr::opts_chunk$set(include = FALSE)
 
 # Create a data frame for indels
 indels <- variants[nchar(variants$REF) > 1 | nchar(variants$ALT) > 1, ]
@@ -159,17 +169,19 @@ indels$SizeBin <- cut(indels$Size, breaks = seq(0, max(indels$Size, na.rm = TRUE
 
 
 # Plot indel size distribution
-ggplot(indels, aes(x = SizeBin, fill = Type)) +
+plot_indel_size<-ggplot(indels, aes(x = SizeBin, fill = Type)) +
   geom_bar(data = subset(indels, Type == "Deletion"), aes(y = after_stat(count)), position = position_nudge(x = -0.2), width = 0.4) +
   geom_bar(data = subset(indels, Type == "Insertion"), aes(y = after_stat(count)), position = position_nudge(x = 0.2), width = 0.4) +
   scale_fill_manual(values = c("Deletion" = "red", "Insertion" = "blue")) +
   labs(title = "Indel Size Distribution", x = "Indel Size (bp)", y = "Count") +
   theme_minimal()
+
+plot_indel_size
 ```
 
-
 ## 4. Depth and Variant Density Across the Genome
-```{r vcf-qc-plots_density, echo=FALSE}
+```{r vcf-qc-plots_density, echo=FALSE, fig.width = 5, fig.height = 5}
+knitr::opts_chunk$set(include = TRUE)
 
 # Plot Depth Across the Genome on a Karyoplot as a Line Plot
 kp <- plotKaryotype(genome = "hg19")# Normalize depth values between 0 and 1
@@ -199,10 +211,12 @@ kpLines(kp, chr = depth_df$Chr, x = depth_df$Position, y = depth_df$DP, ymin=0.2
 #kpPlotDensity(kp, data = GRanges(seqnames = variant_density$Chr, ranges = IRanges(start = variant_density$Position, width = 1)), col = "red", border = "red")
 
 ```
+
 Observed locations accross the genome where variants are present.
 
 ## 5. Allele Frequency Distribution
-```{r vcf-qc-plots_af, echo=FALSE, message=FALSE, warning=FALSE}
+```{r vcf-qc-plots_af, echo=FALSE, message=FALSE, warning=FALSE, fig.width = 5, fig.height = 5}
+knitr::opts_chunk$set(include = TRUE)
 # Extract allele frequency (AF) values from the INFO field
 allele_freqs <- as.numeric(sapply(strsplit(vcf@fix[, "INFO"], ";"), function(x) {
   af_entry <- grep("AF=", x, value = TRUE)
@@ -225,34 +239,114 @@ p_af
 
 
 # 2. Ancestry
-```{r ancestry_plots, eval=FALSE, fig.align="center", fig.cap=c("Ancestry_by_snv_story"), include=FALSE, out.height="460px", out.width='800px'}
-knitr::include_graphics("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/f1988686-db0b-4818-aa0a-d8720c520a23.pdf")
-
-knitr::include_graphics("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/f1988686-db0b-4818-aa0a-d8720c520a23_1kGP_umap.html")
-
-knitr::include_graphics("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/f1988686-db0b-4818-aa0a-d8720c520a23_gnomAD_umap.html")
-
+```{r ancestry_plots, echo=FALSE, fig.align="center", fig.cap=c("Ancestry_by_snv_story"), fig.height=5, fig.width=5}
+knitr::opts_chunk$set(include = TRUE)
+knitr::include_graphics("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/percent_ancestry.png")
+knitr::include_graphics("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/gnomad_plot.png")
 ```
 
 # 3. PGx
 
 
 # 4. Hereditary Genetics
-```{r}
+```{r hereditary-genetics, include=FALSE}
 # Define ACMG secondary findings list of genes
 ACMG_SF_v3.2 <- read.table("~/Documents/genomics/refdata/gene_list/ACMG_SF_v3.2.txt", quote="\"", comment.char="")
+
+Adult_Actionability_Reports_Outcome_Intervention_Pairs_allColumns <- read_delim("~/Documents/genomics/refdata/actionbility/Adult Actionability Reports - Outcome-Intervention Pairs allColumns.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
 
 acmg_var<- X250204_195258_export_variant %>% 
   filter(Gene %in% ACMG_SF_v3.2$V1)
 
-#Revel Score High
+#Filtering:  Revel=Score...104 >=0.4, clinvar pathogenic, bayesdel=`Rank_Score (no MaxAF)`>=.5, alphamissense=  `Score...14`, exclude benign
 variant_high <- acmg_var %>%
-  filter(Score>=0.4| grepl('athog', Clinical_Significance)) %>%
-  select(Gene,cDNA_change,Protein_Change, AF,DP,Score,Chrom...1,Position,Ref_Base,Alt_Base)
+  filter(`Score...104`>=0.4| grepl('athog', Clinical_Significance) | `Rank_Score (no MaxAF)`>=.5) %>%
+  filter(!(grepl('enign', Clinical_Significance))) %>%
+  filter(Sequence_Ontology!="synonymous_variant") %>%
+  distinct(Gene,cDNA_change,Protein_Change, AF,DP,`Score...104`,`Rank_Score (no MaxAF)`,`Score...14`, Clinical_Significance,Chrom...1,Position,Ref_Base,Alt_Base) %>%
+  arrange(-`Score...104`)
+
+
+aar_genes<-Adult_Actionability_Reports_Outcome_Intervention_Pairs_allColumns %>%
+  tidyr::separate_longer_delim(`Gene/Variant`, delim = ",") %>%
+  distinct(`Gene/Variant`,Condition,Outcome) 
+
+aar_gene_var<-merge(X250204_195258_export_variant, aar_genes, by.x=c('Gene'), by.y=c('Gene/Variant'), all.y=TRUE)
+
+aar_gene_var_out <- aar_gene_var %>%
+  filter(`Score...104`>=0.4| grepl('athog', Clinical_Significance) | `Rank_Score (no MaxAF)`>=.5) %>%
+  filter(!(grepl('enign', Clinical_Significance))) %>%
+  filter(Sequence_Ontology!="synonymous_variant") %>%
+  distinct(Gene,cDNA_change,Protein_Change, AF,DP,`Score...104`,`Rank_Score (no MaxAF)`,`Score...14`, Condition,Outcome,Clinical_Significance) %>%
+  arrange(-`Score...104`)
+
+
 ```
 
+```{r HighImpactVariants, fig.width = 5, fig.height = 5}
+knitr::opts_chunk$set(include = TRUE)
+knitr::kable(variant_high, caption = "High Impact Variants")
+
+```
+
+Findings from the 81 ACMG secondary findings list of genes.  The list contains any variant with a clinvar pathogenic, or high revel, alpha missense or bayesdel score. All clinvar benign and synonymous variants have been removed.
+
+```{r ActionabiltyVariants, fig.width = 5, fig.height = 5}
+knitr::opts_chunk$set(include = TRUE)
+knitr::kable(aar_gene_var_out, caption = "Actionabilty Variants")
+```
+
+These are the high value genes from the ClinGen actionability gene list.  These are a collection of 343 gene-outcome-intervention gene sets. 
 
 # 5. Wellness
 
 # 6. PRS categories
+Polygenic Risk Score Knowledge Base is used for calculating polygenic risk scores from given in
+put files using GWAS data pulled from the GWAS Catalog.
 
+- **Study ID** -- The study identifier assigned by the GWAS Catalog (or the user if they uploaded their own GWAS summary statistics)
+- **Reported Trait** -- Trait based on the phenotype being studied, as described by the authors
+- **Trait** -- Trait assigned by the GWAS Catalog, standardized from the Experimental Factor Ontology
+- **Citation** -- The citation of the study
+- **P-Value Annotation** -- The probability that the risk allele confers the amount of risk stated
+- **Beta Annotation** --  Computed in the GWAS study, a numerical value that indicates the increase or decrease in the genetic risk per unit.
+- **Score Type** -- This indicates if the study used odds ratios or beta values
+- **Units (if applicable)** -- This column will contain the beta units if the Score Type is beta. 
+- **SNP Overlap** -- Details the number of SNPs that are in the sample vcf/txt file which are 1. in the study, 2. not excluded from the calculation (see below), and 3. not removed from the calculation due to linkage-disequilibrium clumping.
+- **SNPs Excluded Due To Cutoffs** -- Details the number of snps excluded from the study calculation due to p-value cutoff or minor allele frequency threshold
+- **Included SNPs** -- The total number of SNPs included in the calculation
+- **Score Type** -- This indicates if the study used odds ratios or beta values. Computed in the GWA study, a numerical value of the odds that those in the case group have the allele of interest over the odds that those in the control group have the allele of interest.
+- **Units (if applicable)** -- This column will contain the beta units if the Score Type is beta. 
+- **SNP Overlap** -- Details the number of SNPs that are in the sample vcf/txt file which are 1. in the study, 2. not excluded from the calculation (see below), and 3. not removed from the calculation due to linkage-disequilibrium clumping.
+- **SNPs Excluded Due To Cutoffs** -- Details the number of snps excluded from the study calculation due to p-value cutoff or minor allele frequency threshold
+- **Included SNPs** -- The total number of SNPs included in the calculation
+- **Used Super Population** -- The super population used for linkage disequillibrium
+
+#### Columns Only Available In The Full Version
+- **Percentile** -- Indicates the percentile rank of the samples polygenic risk score *(also included in the condensed version of .txt input files)
+- **Protective Variants** -- Variants that are protective against the phenotype of interest
+- **Risk Variants** -- Variants that add risk for the phenotype of interest
+- **Variants Without Risk Alleles** -- Variants that are present in the study, but the sample does not possess the allele reported with association. Note that a SNP may be in this list and also in the Protective Variants or Risk Variants list. This is caused by an individual being heterozygous for the alleles at that point. 
+- **Variants in High LD** -- Variants that are not used in the calculation, due to them being in high linkage disequillibrium with another variant in the study. 
+
+```{r prs, include=FALSE}
+prs <- read_delim("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/prs.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+prs$`Polygenic Risk Score`<-as.double(prs$`Polygenic Risk Score`)
+
+high_prs_risk<-prs %>% 
+  filter(`Score Type`=='OR') %>% 
+  filter(`Polygenic Risk Score` !="NF") %>% 
+  arrange(-`Polygenic Risk Score`)
+
+ggplot(high_prs_risk,aes(reorder(`Polygenic Risk Score`,high_prs_risk$`Polygenic Risk Score`),`Reported Trait`))+
+  geom_point()+ 
+  geom_vline(xintercept=0)+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+```
