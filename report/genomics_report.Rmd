@@ -17,7 +17,7 @@ output:
 ---
 
 ```{r setup_load_pkg, dependson="packages" }
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(include = FALSE)
 #if (!require("BiocManager", quietly = TRUE))
 #    install.packages("BiocManager")
 #BiocManager::install("karyoploteR")
@@ -48,7 +48,7 @@ library(VariantAnnotation)
 This report provides a quality control (QC) analysis of the input Variant Call Format (VCF) file, summarizing key statistics and visualizations.
 
 ## 2. Data Import, Preprocessing, QC
-```{r data_import}
+```{r data_import, include=FALSE}
 knitr::opts_chunk$set(include = FALSE)
 vcf_file <- "~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/bobby_exome_genotyped.ann.vcf"
 #vcf_file <- "~/Documents/genomics/data/f1988686-db0b-4818-aa0a-d8720c520a23_genotyped.ann.vcf"
@@ -87,7 +87,7 @@ df <- df %>% filter(!is.na(DP) & !is.na(GQ))
 ## 3. Variant Quality Control Metrics
 
 ```{r qc_summary, echo=FALSE}
-knitr::opts_chunk$set(include = FALSE)
+knitr::opts_chunk$set(include = TRUE)
 # Calculate Ts/Tv ratio manually
 transitions <- c("A>G", "G>A", "C>T", "T>C")
 transversions <- c("A>C", "A>T", "G>C", "G>T", "C>A", "C>G", "T>A", "T>G")
@@ -136,7 +136,7 @@ qc_summary <- data.frame(
 
 ```
 
-```{r show_qc_summary, fig.width = 5, fig.height = 5}
+```{r show_qc_summary, echo=FALSE, fig.height=5, fig.width=5}
 knitr::opts_chunk$set(include = TRUE)
 knitr::kable(qc_summary, caption = "QC summary table")
 ```
@@ -326,13 +326,14 @@ put files using GWAS data pulled from the GWAS Catalog.
 - **Used Super Population** -- The super population used for linkage disequillibrium
 
 #### Columns Only Available In The Full Version
-- **Percentile** -- Indicates the percentile rank of the samples polygenic risk score *(also included in the condensed version of .txt input files)
+- **Percentile** -- Indicates the percentile rank of the samples polygenic risk score 
 - **Protective Variants** -- Variants that are protective against the phenotype of interest
 - **Risk Variants** -- Variants that add risk for the phenotype of interest
 - **Variants Without Risk Alleles** -- Variants that are present in the study, but the sample does not possess the allele reported with association. Note that a SNP may be in this list and also in the Protective Variants or Risk Variants list. This is caused by an individual being heterozygous for the alleles at that point. 
 - **Variants in High LD** -- Variants that are not used in the calculation, due to them being in high linkage disequillibrium with another variant in the study. 
 
-```{r prs, include=FALSE}
+```{r prs, echo=FALSE}
+knitr::opts_chunk$set(include = TRUE)
 prs <- read_delim("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/prs.tsv", 
     delim = "\t", escape_double = FALSE, 
     trim_ws = TRUE)
