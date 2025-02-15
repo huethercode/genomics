@@ -16,7 +16,7 @@ output:
     df_print: kable
 ---
 
-```{r setup_load_pkg, dependson="packages" }
+```{r setup_load_pkg, include=FALSE, dependson="packages" }
 knitr::opts_chunk$set(include = FALSE)
 #if (!require("BiocManager", quietly = TRUE))
 #    install.packages("BiocManager")
@@ -42,24 +42,71 @@ library(kableExtra)
 library(VariantAnnotation)
 
 
+
 ```
 # 1. Introduction and Data Import
 
-This report provides a quality control (QC) analysis of the input Variant Call Format (VCF) file, summarizing key statistics and visualizations.
+The specific focus is Adulthood understanding of genomic observations.
+
+This report provides a quality control (QC) analysis of the input Variant Call Format (VCF) file, summarizing key statistics and visualizations. 
 
 ## 2. Data Import, Preprocessing, QC
 ```{r data_import, include=FALSE}
 knitr::opts_chunk$set(include = FALSE)
-vcf_file <- "~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/bobby_exome_genotyped.ann.vcf"
+##################################################################
+#Load Files
+# set working directory with the files needed
+#setwd("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf")
+setwd("~/Documents/genomics/output/21a36b0e-e5ae-11ef-9dc1-002436b6d0cf")
+#vcf_file <- "~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/bobby_exome_genotyped.ann.vcf"
 #vcf_file <- "~/Documents/genomics/data/f1988686-db0b-4818-aa0a-d8720c520a23_genotyped.ann.vcf"
+#vcf_file <- "~/Documents/genomics/output/21a36b0e-e5ae-11ef-9dc1-002436b6d0cf/Gs74Pkvkvl.vcf"
+#vcf_file <- "4c456a7a-e189-11ef-bb21-002436b6d0cf.vcf"
+vcf_file <- "21a36b0e-e5ae-11ef-9dc1-002436b6d0cf.vcf"
 
-#open-cravat annotation: Manual Step: run annotations: Clinvar (2nd),  REVEL, alpha missesense, bayesdel,  pharmgkb: export coding
-X250204_195258_export_variant <- read_delim("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/oc.tsv", 
+opencr_file<-"oc.tsv"
+prs_file<-"prs.tsv"
+
+
+
+
+
+
+
+
+
+if(!file.exists("gnomad_plot.png")){
+  gnomad_plot<-"gnomad_plot.png"
+}
+if(!file.exists("percent_ancestry.png")){
+  percent_ancestry_plot<-"percent_ancestry.png"
+}
+
+prs <- read_delim(prs_file, 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+  X250204_195258_export_variant <- read_delim(opencr_file, 
     delim = "\t", escape_double = FALSE, 
     trim_ws = TRUE, skip = 6)
+  
+#Reference Sets 
+# Define ACMG secondary findings list of genes
+ACMG_SF_v3.2 <- read.table("../../refdata/gene_list/ACMG_SF_v3.2.txt", quote="\"", comment.char="")
 
+Adult_Actionability_Reports_Outcome_Intervention_Pairs_allColumns <- read_delim("../../refdata/actionbility/Adult Actionability Reports - Outcome-Intervention Pairs allColumns.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
 
+wellness <- read_delim("~/Documents/genomics/refdata/wellness/wellness.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+#################################################################
 vcf <- read.vcfR(vcf_file, verbose = FALSE)
+
+
+
 
 # Filter out low-quality variants
 quality_threshold <- 30
@@ -84,7 +131,21 @@ df <- df %>% filter(!is.na(DP) & !is.na(GQ))
 
 ```
 
-## 3. Variant Quality Control Metrics
+## 3. VCF Quality Control Metrics
+the VCF file is a general purpose variant format so there must be some knowledge behind what went into generating the file before it is useful.  The expectation here is the file contains variant level data, hopefully from broad panel, describing the germline variants identified.
+
+Some metrics of interest if the vcf file fits this basic input requirement.
+
+Metric	Value (Observed)	Threshold	Status
+- Ts/Tv Ratio	ts_tv_ratio	> 2.0 (exome), > 1.8 (genome)	PASS/FAIL.  transition/transversion (Ti/Tv) ratio (transition: purine-based A↔G or transversion: pryimidine-based C↔T).  <1 indicates many false positive changes with 0.5 (ts:tv=2:4=0.5) being random. beyond 3 indicates a highly biased cohort of changes. This might be observed in targeted panels of GC rich regions. for general targeted a value of 1-3 is expected. 
+
+- Mean Depth (DP)	mean(dp, na.rm = TRUE)	> 30 (exome), > 10 (genome)	PASS/FAIL.  Anything less than 10 the zygosity should be questioned but the call may not necessary be bad.  
+
+
+- Genotype Quality (GQ)	mean(gq, na.rm = TRUE)	> 20	PASS/FAIL
+- SNP Count	snp_count	N/A (context-dependent)	Info
+- Indel Count	indel_count	N/A (context-dependent)	Info
+
 
 ```{r qc_summary, echo=FALSE}
 knitr::opts_chunk$set(include = TRUE)
@@ -150,9 +211,8 @@ SNP Count	snp_count	N/A (context-dependent)	Info
 Indel Count	indel_count	N/A (context-dependent)	Info
 
 ## 4. Indel size distribution
-
-```{r indel_dist, include=FALSE}
-knitr::opts_chunk$set(include = FALSE)
+```{r indel_dist, echo=FALSE}
+knitr::opts_chunk$set(include = TRUE)
 
 # Create a data frame for indels
 indels <- variants[nchar(variants$REF) > 1 | nchar(variants$ALT) > 1, ]
@@ -205,7 +265,7 @@ kp <- plotKaryotype(genome = "hg19")
   
 #kpLines(kp, chr = depth_df$Chr, x = depth_df$Position, y = depth_df$DP, col = "blue", lwd = 2)
 #kpPlotDensity(kp, data = GRanges(seqnames = variant_density$Chr, ranges = IRanges(start = variant_density$Position, width = 1)), col = "red", border = "red")
-kpLines(kp, chr = depth_df$Chr, x = depth_df$Position, y = depth_df$DP, ymin=0.2, ymax=1, r0=0.05, r1=0.75, col = "blue", lwd = 2)
+kpPoints(kp, chr = depth_df$Chr, x = depth_df$Position, y = depth_df$DP, ymin=0.2, ymax=1, r0=0.05, r1=0.75, col = "blue", lwd = 2)
 
 
 #kpPlotDensity(kp, data = GRanges(seqnames = variant_density$Chr, ranges = IRanges(start = variant_density$Position, width = 1)), col = "red", border = "red")
@@ -215,22 +275,22 @@ kpLines(kp, chr = depth_df$Chr, x = depth_df$Position, y = depth_df$DP, ymin=0.2
 Observed locations accross the genome where variants are present.
 
 ## 5. Allele Frequency Distribution
-```{r vcf-qc-plots_af, echo=FALSE, message=FALSE, warning=FALSE, fig.width = 5, fig.height = 5}
+```{r vcf-qc-plots_af, echo=FALSE, fig.height=5, fig.width=5, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(include = TRUE)
-# Extract allele frequency (AF) values from the INFO field
-allele_freqs <- as.numeric(sapply(strsplit(vcf@fix[, "INFO"], ";"), function(x) {
-  af_entry <- grep("AF=", x, value = TRUE)
-  if (length(af_entry) > 0) {
-    as.numeric(sub("AF=", "", af_entry))
-  } else {
-    NA
-  }
-}))
+# Extract allele frequency (AF) values from the FORMAT field
 
-allele_freqs <- allele_freqs[!is.na(allele_freqs)]
+allele_freqs <- extract.gt(vcf, element = "AF", as.numeric = TRUE)
+colnames(allele_freqs)[1] <- "AF"
+
+allele_data <- data.frame(
+  DP = extract.gt(vcf, element = "DP", as.numeric = TRUE)[, 1],
+  AO = extract.gt(vcf, element = "AO", as.numeric = TRUE)[, 1]
+)
+
+allele_data$AF<-allele_data$AO/allele_data$DP
 
 # Plot allele frequency distribution
-p_af<-ggplot(data.frame(AF = allele_freqs), aes(x = AF)) +
+p_af<-ggplot(allele_data, aes(x = AF)) +
   geom_histogram(binwidth = 0.05, fill = "blue", color = "black", alpha = 0.7) +
   labs(title = "Allele Frequency Distribution", x = "Allele Frequency", y = "Count") +
   theme_minimal()
@@ -239,35 +299,38 @@ p_af
 
 
 # 2. Ancestry
-```{r ancestry_plots, echo=FALSE, fig.align="center", fig.cap=c("Ancestry_by_snv_story"), fig.height=5, fig.width=5}
+```{r ancestry_plots, eval=FALSE, fig.align="center", fig.cap=c("Ancestry_by_snv_story"), fig.height=5, fig.width=5, include=FALSE}
 knitr::opts_chunk$set(include = TRUE)
-knitr::include_graphics("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/percent_ancestry.png")
-knitr::include_graphics("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/gnomad_plot.png")
+if(!file.exists("percent_ancestry.png")){
+  knitr::include_graphics("percent_ancestry.png")
+  }
+
+  knitr::include_graphics("gnomad_plot.png")
+
+
+
 ```
 
 # 3. PGx
-
+In the works!!
 
 # 4. Hereditary Genetics
 ```{r hereditary-genetics, include=FALSE}
-# Define ACMG secondary findings list of genes
-ACMG_SF_v3.2 <- read.table("~/Documents/genomics/refdata/gene_list/ACMG_SF_v3.2.txt", quote="\"", comment.char="")
-
-Adult_Actionability_Reports_Outcome_Intervention_Pairs_allColumns <- read_delim("~/Documents/genomics/refdata/actionbility/Adult Actionability Reports - Outcome-Intervention Pairs allColumns.tsv", 
-    delim = "\t", escape_double = FALSE, 
-    trim_ws = TRUE)
-
+#open-cravat annotation: Manual Step: run annotations: Clinvar (2nd),  REVEL, alpha missesense, bayesdel,  pharmgkb: export coding
+#B: Score... 104 #fix space
+#O: Score... 115 #fix space
 
 acmg_var<- X250204_195258_export_variant %>% 
-  filter(Gene %in% ACMG_SF_v3.2$V1)
+  filter(Gene %in% ACMG_SF_v3.2$V1) %>%
+  filter(Allele_Origin=='germline')
 
-#Filtering:  Revel=Score...104 >=0.4, clinvar pathogenic, bayesdel=`Rank_Score (no MaxAF)`>=.5, alphamissense=  `Score...14`, exclude benign
+#Filtering:  Revel=Score...115 >=0.4, clinvar pathogenic, bayesdel=`Rank_Score (no MaxAF)`>=.5, alphamissense=  `Score...14`, exclude benign
 variant_high <- acmg_var %>%
-  filter(`Score...104`>=0.4| grepl('athog', Clinical_Significance) | `Rank_Score (no MaxAF)`>=.5) %>%
+  filter(`Score...115`>=0.4| grepl('athog', Clinical_Significance) | `Rank_Score (no MaxAF)`>=.5 | Sequence_Ontology %in% c("complex_substitution","start_lost","inframe_deletion","frameshift_elongation","frameshift_truncation","stop_gained")) %>%
   filter(!(grepl('enign', Clinical_Significance))) %>%
   filter(Sequence_Ontology!="synonymous_variant") %>%
-  distinct(Gene,cDNA_change,Protein_Change, AF,DP,`Score...104`,`Rank_Score (no MaxAF)`,`Score...14`, Clinical_Significance,Chrom...1,Position,Ref_Base,Alt_Base) %>%
-  arrange(-`Score...104`)
+  distinct(Gene,cDNA_change,Protein_Change, AF,DP,`Score...115`,`Rank_Score (no MaxAF)`,`Score...14`, Clinical_Significance,Chrom...1,Position,Ref_Base,Alt_Base) %>%
+  arrange(-`Score...115`)
 
 
 aar_genes<-Adult_Actionability_Reports_Outcome_Intervention_Pairs_allColumns %>%
@@ -277,11 +340,12 @@ aar_genes<-Adult_Actionability_Reports_Outcome_Intervention_Pairs_allColumns %>%
 aar_gene_var<-merge(X250204_195258_export_variant, aar_genes, by.x=c('Gene'), by.y=c('Gene/Variant'), all.y=TRUE)
 
 aar_gene_var_out <- aar_gene_var %>%
-  filter(`Score...104`>=0.4| grepl('athog', Clinical_Significance) | `Rank_Score (no MaxAF)`>=.5) %>%
+  filter(aar_gene_var$Allele_Origin=='germline') %>%
+  filter(`Score...115`>=0.4| grepl('athog', Clinical_Significance) | `Rank_Score (no MaxAF)`>=.5 | Sequence_Ontology %in% c("complex_substitution","start_lost","inframe_deletion","frameshift_elongation","frameshift_truncation","stop_gained")) %>%
   filter(!(grepl('enign', Clinical_Significance))) %>%
   filter(Sequence_Ontology!="synonymous_variant") %>%
-  distinct(Gene,cDNA_change,Protein_Change, AF,DP,`Score...104`,`Rank_Score (no MaxAF)`,`Score...14`, Condition,Outcome,Clinical_Significance) %>%
-  arrange(-`Score...104`)
+  distinct(Gene,cDNA_change,Protein_Change, AF,DP,`Score...115`,`Rank_Score (no MaxAF)`,`Score...14`, Condition,Outcome,Clinical_Significance) %>%
+  arrange(-`Score...115`)
 
 
 ```
@@ -302,6 +366,47 @@ knitr::kable(aar_gene_var_out, caption = "Actionabilty Variants")
 These are the high value genes from the ClinGen actionability gene list.  These are a collection of 343 gene-outcome-intervention gene sets. 
 
 # 5. Wellness
+```{r wellness, include=FALSE}
+# include list of genes and wellness categories
+#For wellness we are looking for gene disruption, any lof alteration/ high impact alteration.
+germline_variant<-X250204_195258_export_variant  %>%
+  filter(Allele_Origin=='germline')
+
+wellness_var_raw<- merge(germline_variant, wellness, by.x=c("Gene"), by.y=c("gene"), all.y=TRUE)
+
+wellness_var<-wellness_var_raw %>%
+  dplyr::select(Gene,Sequence_Ontology,cDNA_change,Protein_Change,Score...14,`Rank_Score (no MaxAF)`,`Allele_Frequencies TGP`,Chrom...1,VCF_Position,`VCF_Ref Allele`,`VCF_Alt Allele`,AF,DP, Score...115,type)
+
+#needs further data but guess LOF variant in these genes indicate high impact. 
+#Filtering:  Revel=Score...115 >=0.4, OR bayesdel=`Rank_Score (no MaxAF)`>=.5, alphamissense=  `Score...14`,
+#HIGH IMPACT:Score...115 >=0.75, OR bayesdel=`Rank_Score (no MaxAF)`>=.75, alphamissense=  `Score...14` >.75
+#MEDIUM IMPACT: :Score...115 >=0.5, OR bayesdel=`Rank_Score (no MaxAF)`>=.5, alphamissense=  `Score...14` >.5
+#ELSE LOW IMPACT
+
+wellness_var<-wellness_var %>% mutate(impact=case_when(
+  Score...115 >=0.75 | `Rank_Score (no MaxAF)`>=.75 | `Score...14` >.75 ~ 1,
+  Score...115 >=0.5 | `Rank_Score (no MaxAF)`>=.5 | `Score...14` >.5 ~ 2, 
+  is.na(Score...115) | is.na(`Rank_Score (no MaxAF)`) | is.na(`Score...14` >.5) ~ 4,   
+  TRUE ~ 3)
+            ) %>%
+  group_by(type) %>%
+  summarise(Gene = paste(Gene, collapse = ", "),
+      Highest_Impact = min(impact, na.rm = TRUE)) %>%
+  arrange(Highest_Impact)
+
+
+```
+
+```{r wellness_table, fig.width = 5, fig.height = 5}
+knitr::opts_chunk$set(include = TRUE)
+knitr::kable(wellness_var, caption = "Wellness Table")
+```
+Needs further data and filtering but guess LOF variant in these genes indicate high impact. Specifically impact/occurrence of trait are described as:
+#HIGH IMPACT (1): Revel>=0.75, OR bayesdel>=.75 or alphamissense >.75
+#MEDIUM IMPACT (2): Revel>=0.5, OR bayesdel>=.5 or alphamissense >.5
+#LOW IMPACT (3): Revel<0.5, OR bayesdel<.5 or alphamissense <.5
+#Unkown IMPACT (4)
+
 
 # 6. PRS categories
 Polygenic Risk Score Knowledge Base is used for calculating polygenic risk scores from given in
@@ -324,8 +429,6 @@ put files using GWAS data pulled from the GWAS Catalog.
 - **SNPs Excluded Due To Cutoffs** -- Details the number of snps excluded from the study calculation due to p-value cutoff or minor allele frequency threshold
 - **Included SNPs** -- The total number of SNPs included in the calculation
 - **Used Super Population** -- The super population used for linkage disequillibrium
-
-#### Columns Only Available In The Full Version
 - **Percentile** -- Indicates the percentile rank of the samples polygenic risk score 
 - **Protective Variants** -- Variants that are protective against the phenotype of interest
 - **Risk Variants** -- Variants that add risk for the phenotype of interest
@@ -334,9 +437,29 @@ put files using GWAS data pulled from the GWAS Catalog.
 
 ```{r prs, echo=FALSE}
 knitr::opts_chunk$set(include = TRUE)
-prs <- read_delim("~/Documents/genomics/output/4c456a7a-e189-11ef-bb21-002436b6d0cf/prs.tsv", 
-    delim = "\t", escape_double = FALSE, 
-    trim_ws = TRUE)
+##https://prs.byu.edu/cli_download.html
+
+#need to annotate these scores by traits from  https://www.pgscatalog.org/browse/traits/. there are about a dozen categories.  makes interpreting easier.
+#prs %>% distinct(Trait)  to one of these:
+
+#Biological process39 PGS
+#Body measurement302 PGS
+#Cancer737 PGS
+#Cardiovascular disease401 PGS
+#Cardiovascular measurement304 PGS
+#Digestive system disorder423 PGS
+#Hematological measurement401 PGS
+#Immune system disorder232 PGS
+#Inflammatory measurement50 PGS
+#Lipid or lipoprotein measurement435 PGS
+#Liver enzyme measurement40 PGS
+#Metabolic disorder278 PGS
+#Neurological disorder282 PGS
+#Other disease308 PGS
+#Other measurement1803 PGS
+#Other trait168 PGS
+#Sex-specific PGS18 PGS
+
 
 prs$`Polygenic Risk Score`<-as.double(prs$`Polygenic Risk Score`)
 
@@ -345,9 +468,72 @@ high_prs_risk<-prs %>%
   filter(`Polygenic Risk Score` !="NF") %>% 
   arrange(-`Polygenic Risk Score`)
 
-ggplot(high_prs_risk,aes(reorder(`Polygenic Risk Score`,high_prs_risk$`Polygenic Risk Score`),`Reported Trait`))+
+ggplot(high_prs_risk,aes(`Polygenic Risk Score`,reorder(`Reported Trait`,high_prs_risk$`Polygenic Risk Score`)))+
   geom_point()+ 
   geom_vline(xintercept=0)+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
+high_prs_risk_table <- high_prs_risk %>% 
+  filter(`Polygenic Risk Score`>=1.5) %>% 
+  dplyr::select(`Reported Trait`,Trait,`Polygenic Risk Score`,Percentile)
+
 ```
+
+High odds ratio calls
+
+```{r prs_beta, echo=FALSE}
+knitr::opts_chunk$set(include = TRUE)
+
+high_prs_beta<-prs %>% 
+  filter(`Score Type`=='beta') %>% 
+  filter(`Polygenic Risk Score` !="NF") %>% 
+  filter(`Polygenic Risk Score`>=0.2 | `Polygenic Risk Score`<=-0.4) %>%
+  arrange(-`Polygenic Risk Score`)
+
+ggplot(high_prs_beta,aes(`Polygenic Risk Score`,reorder(`Reported Trait`,high_prs_beta$`Polygenic Risk Score`)))+
+  geom_point()+ 
+  geom_vline(xintercept=0)+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+high_prs_beta_table <- high_prs_beta %>% 
+  filter(`Polygenic Risk Score`>=1 | `Polygenic Risk Score`<=-1) %>% 
+  dplyr::select(`Reported Trait`,Trait,`Polygenic Risk Score`,Percentile)
+
+
+```
+
+```{r high_risk_table, echo=FALSE, fig.height=5, fig.width=5}
+knitr::opts_chunk$set(include = TRUE)
+knitr::kable(high_prs_risk_table, caption = "High Risk Categories")
+```
+Traits with an Odds Ratio greater than 1.5.  Be sure to check the percentile as a measure of impact.
+
+
+```{r high_beta_risk_table, echo=FALSE, fig.height=5, fig.width=5}
+knitr::opts_chunk$set(include = TRUE)
+knitr::kable(high_prs_beta_table, caption = "High Beta Risk Categories")
+```
+Traits with an Beta Ratio greater 1 or less than 1.  Be sure to check the percentile as a measure of impact.
+
+#Conclusions Prompt 
+
+Chatgpt prompt: help summarize the main take home points in the personalized genomics report. Give a overall summary with key insights. Provide a table of insights and suggest some life style action changes with details. give links when appropriate, exact action items and expected change.
+
+
+
+
+# References
+- ** R modules **
+1. R
+2. vcfR
+3. ggplot2
+4. karyoploteR
+
+VCF QC
+1. titv https://academic.oup.com/bioinformatics/article/31/3/318/2366248
+
+Ancestry
+1. snvstory:
+
+PRS
+1. https://www.nature.com/articles/s42003-022-03795-x 
