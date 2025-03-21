@@ -40,8 +40,8 @@ The pipeline consists of the following steps:
         * Normalizes and merges the VCF using `bcftools`.
     * Runs PRS calculation with different p-value thresholds.
     * Moves the PRS output file (`prs.tsv`) to the run output folder.
-    * Creates a minimal variant TSV file for R processing.
-6.  **Report Generation (R Markdown):**
+6. ** Creates a minimal variant TSV file for R processing.
+7.  **Report Generation (R Markdown):**
     * Uses an R Markdown script (`genomics_report.Rmd`) to compile all results into a final HTML report.
 
 ## Usage
@@ -96,12 +96,12 @@ The pipeline consists of the following steps:
         ```
 
     * Move the `prs.tsv` file to the run output folder.
-    * create a subset tab file for r markdown.
+5. **create a subset tab file for QC and r markdown.
         ```bash
         bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t[%DP\t%GQ\t%AF\t%AD]\n' <your_vcf>.vcf > <your_vcf>_subset.tab
         ```
 
-5.  **Generate the Report (R Markdown):**
+6.  **Generate the Report (R Markdown):**
 
     * Navigate to the `report` directory: `cd report`.
     * Run the R Markdown script:
