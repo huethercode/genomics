@@ -18,7 +18,7 @@ The pipeline consists of the following steps:
 1.  **Configuration:** Reads input configuration.
 2.  **Output Folder Creation:** Creates a unique output folder for each run.
 3.  **Variant Annotation (OpenCRAVAT):**
-    * Checks for VCF files.
+    * Checks for VCF files, solves the having to download everything problem. 
     * Runs OpenCRAVAT (OC) for variant annotation.
     * Saves output in TSV format.
     * **Manual Steps:**
