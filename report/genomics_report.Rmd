@@ -1,6 +1,7 @@
 ---
 title: "Genomics_report_v1"
 author: "Huethercode"
+subtitle: "https://github.com/huethercode/genomics/tree/main"
 date: "`r Sys.Date()`"
 output:
   word_document:
@@ -60,12 +61,13 @@ knitr::opts_chunk$set(include = FALSE)
 #Load Files
 # set working directory with the files needed
 #p:21a36b0e-e5ae-11ef-9dc1-002436b6d0cf
-#b:4c456a7a-e189-11ef-bb21-002436b6d0cf
+#b_e:4c456a7a-e189-11ef-bb21-002436b6d0cf
+#b_wgs: 69657178-0762-11f0-affb-002436b6d0cf
 #i: 391b3394-fb01-11ef-9450-002436b6d0cf
 #bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t[%DP\t%GQ\t%AF\t%AD]\n' 391b3394-fb01-11ef-9450-002436b6d0cf.vcf > 391b3394-fb01-11ef-9450-002436b6d0cf_subset.tab
-workingdir<-"~/Documents/genomics/output/391b3394-fb01-11ef-9450-002436b6d0cf"
+workingdir<-"~/Documents/genomics/output/69657178-0762-11f0-affb-002436b6d0cf"
 setwd(workingdir)
-vcf_file <- "391b3394-fb01-11ef-9450-002436b6d0cf_subset.tab"
+vcf_file <- "69657178-0762-11f0-affb-002436b6d0cf_subset.tab"
 
 opencr_file<-"oc.tsv"
 prs_file<-"prs.tsv"
@@ -487,7 +489,8 @@ We can then expand our search to include genes from the Gene curation coalition 
 
 #X250204_195258_export_variant$alpha_score<-ifelse("Score...14" %in% colnames(X250204_195258_export_variant),X250204_195258_export_variant$`Score...14`,X250204_195258_export_variant$`Score...14`)
 
-X250204_195258_export_variant$reval_score<-X250204_195258_export_variant$`Score...96`
+X250204_195258_export_variant$reval_score<-ifelse("Score...96" %in% colnames(X250204_195258_export_variant),X250204_195258_export_variant$`Score...96`,X250204_195258_export_variant$`Score...88`)
+
 X250204_195258_export_variant$alpha_score<-X250204_195258_export_variant$`Score...19`
 
 
@@ -508,7 +511,7 @@ variant_high <- acmg_var %>%
   filter(reval_score>=0.4| grepl('athog', Clinical_Significance) | `Rank_Score (no MaxAF)`>=.5 | Sequence_Ontology %in% c("complex_substitution","start_lost","inframe_deletion","frameshift_elongation","frameshift_truncation","stop_gained")) %>%
   filter(!(grepl('enign', Clinical_Significance))) %>%
   filter(Sequence_Ontology!="synonymous_variant") %>%
-  distinct(Gene,cDNA_change,Protein_Change, AF,DP,reval_score,`Rank_Score (no MaxAF)`,alpha_score, Clinical_Significance,Disease_Names) %>%
+  distinct(Gene,cDNA_change,Protein_Change, DP,reval_score,`Rank_Score (no MaxAF)`,alpha_score, Clinical_Significance,Disease_Names) %>%
   arrange(-reval_score)
 
 #non acmg. set the filters more aggressive.
@@ -516,7 +519,7 @@ variant_nonacmg_high <- non_acmg_var %>%
   filter(reval_score>=0.9| (grepl('athog', Clinical_Significance) & !grepl('Conflicting',Clinical_Significance)) | `Rank_Score (no MaxAF)`>=.9 | Sequence_Ontology %in% c("complex_substitution","start_lost","inframe_deletion","frameshift_elongation","frameshift_truncation","stop_gained")) %>%
   filter(!(grepl('enign', Clinical_Significance))) %>%
   filter(Sequence_Ontology!="synonymous_variant") %>%
-  distinct(Gene,cDNA_change,Protein_Change, AF,DP,reval_score,`Rank_Score (no MaxAF)`,alpha_score, Clinical_Significance,Disease_Names) %>%
+  distinct(Gene,cDNA_change,Protein_Change, DP,reval_score,`Rank_Score (no MaxAF)`,alpha_score, Clinical_Significance,Disease_Names) %>%
   arrange(-reval_score, Clinical_Significance)
 
 
@@ -532,7 +535,7 @@ aar_gene_var_out <- aar_gene_var %>%
   filter(reval_score>=0.4| (grepl('athog', Clinical_Significance) & !grepl('Conflicting',Clinical_Significance)) | `Rank_Score (no MaxAF)`>=.4 | Sequence_Ontology %in% c("complex_substitution","start_lost","inframe_deletion","frameshift_elongation","frameshift_truncation","stop_gained")) %>%
   filter(!(grepl('enign', Clinical_Significance))) %>%
   filter(Sequence_Ontology!="synonymous_variant") %>%
-  distinct(Gene,cDNA_change,Protein_Change, AF,DP,reval_score,`Rank_Score (no MaxAF)`,alpha_score, Condition,Outcome,Clinical_Significance) %>%
+  distinct(Gene,cDNA_change,Protein_Change, DP,reval_score,`Rank_Score (no MaxAF)`,alpha_score, Condition,Outcome,Clinical_Significance) %>%
   arrange(-reval_score, Clinical_Significance)
 
 
@@ -612,7 +615,7 @@ germline_variant<-X250204_195258_export_variant  %>%
 wellness_var_raw<- merge(germline_variant, wellness, by.x=c("Gene"), by.y=c("gene"), all.y=TRUE)
 
 wellness_var<-wellness_var_raw %>%
-  dplyr::select(Gene,Sequence_Ontology,cDNA_change,Protein_Change,alpha_score,`Rank_Score (no MaxAF)`,`Allele_Frequencies TGP`,Chrom...2,VCF_Position,`VCF_Ref Allele`,`VCF_Alt Allele`,AF,DP, reval_score,type)
+  dplyr::select(Gene,Sequence_Ontology,cDNA_change,Protein_Change,alpha_score,`Rank_Score (no MaxAF)`,`Allele_Frequencies TGP`,Chrom...2,VCF_Position,`VCF_Ref Allele`,`VCF_Alt Allele`,DP, reval_score,type)
 
 #needs further data but guess LOF variant in these genes indicate high impact. 
 #Filtering:  Revel=Score...115 >=0.4, OR bayesdel=`Rank_Score (no MaxAF)`>=.5, alphamissense=  `alpha_score`,
